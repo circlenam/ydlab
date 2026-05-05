@@ -1,5 +1,5 @@
 {
-  "updated": "2026-05-05 00:33 KST",
+  "updated": "2026-05-05 00:36 KST",
   "source": "한국환경공단 에어코리아",
   "stations": [
     {
@@ -90,21 +90,29 @@
       "id": "ansan",
       "name": "단원구",
       "area": "안산",
-      "pm25": 36.0,
-      "pm10": 66.0,
-      "no2": 0.02,
-      "so2": 0.006,
+      "pm25": 17.0,
+      "pm10": 48.0,
+      "no2": 0.012,
+      "so2": 0.005,
       "o3": 0.046,
-      "co": 0.7,
-      "station_matched": "고잔",
-      "risk": "high",
+      "co": 0.6,
+      "station_matched": "고잔동",
+      "risk": "mid",
       "live": true
     },
     {
       "id": "sihwa",
       "name": "시화산단",
       "area": "시흥",
-      "live": false
+      "pm25": 26.0,
+      "pm10": 31.0,
+      "no2": 0.014,
+      "so2": 0.005,
+      "o3": 0.034,
+      "co": 0.4,
+      "station_matched": "대야동",
+      "risk": "mid",
+      "live": true
     }
   ]
 }
