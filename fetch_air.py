@@ -6,16 +6,16 @@ from datetime import datetime
 API_KEY = os.environ.get('AIRKOREA_KEY', '602d951dbed28048545dcbf3a9b8a3483185bdff37afa2eae5f516c741faeddd')
 BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty'
 
-# 지역별 후보 측정소명 여러 개 시도
+# 확정된 측정소명 + 시화산단 후보 추가
 STATIONS = [
-    {'id': 'namdong',  'name': '남동구',   'area': '인천', 'candidates': ['구월', '남동', '논현', '남동구']},
-    {'id': 'seo',      'name': '서구',     'area': '인천', 'candidates': ['서구', '청라', '검단', '오류']},
-    {'id': 'jung',     'name': '중구',     'area': '인천', 'candidates': ['중구', '항동', '신흥', '인천중구']},
-    {'id': 'yeonsu',   'name': '연수구',   'area': '인천', 'candidates': ['연수', '송도', '옥련', '연수구']},
-    {'id': 'bupyeong', 'name': '부평구',   'area': '인천', 'candidates': ['부평', '갈산', '부평구', '산곡']},
-    {'id': 'gyeyang',  'name': '계양구',   'area': '인천', 'candidates': ['계양', '계산', '계양구', '효성']},
-    {'id': 'ansan',    'name': '단원구',   'area': '안산', 'candidates': ['안산', '단원', '선부', '고잔', '원곡']},
-    {'id': 'sihwa',    'name': '시화산단', 'area': '시흥', 'candidates': ['정왕', '시흥', '월곶', '시화', '능곡']},
+    {'id': 'namdong',  'name': '남동구',   'area': '인천', 'candidates': ['남동', '구월', '논현']},
+    {'id': 'seo',      'name': '서구',     'area': '인천', 'candidates': ['청라', '서구', '검단']},
+    {'id': 'jung',     'name': '중구',     'area': '인천', 'candidates': ['중구', '항동', '신흥']},
+    {'id': 'yeonsu',   'name': '연수구',   'area': '인천', 'candidates': ['송도', '연수', '옥련']},
+    {'id': 'bupyeong', 'name': '부평구',   'area': '인천', 'candidates': ['부평', '갈산', '산곡']},
+    {'id': 'gyeyang',  'name': '계양구',   'area': '인천', 'candidates': ['계산', '계양', '효성']},
+    {'id': 'ansan',    'name': '단원구',   'area': '안산', 'candidates': ['고잔', '안산', '선부', '원곡', '단원']},
+    {'id': 'sihwa',    'name': '시화산단', 'area': '시흥', 'candidates': ['정왕', '월곶', '시화', '능곡', '시흥', '신천', '대야', '거모', '배곧', '목감', '군자']},
 ]
 
 def fetch(station_name):
@@ -95,7 +95,7 @@ with open('data/airdata.json', 'w', encoding='utf-8') as f:
 
 live_count = sum(1 for s in result['stations'] if s.get('live'))
 print(f'\n완료: {live_count}/{len(STATIONS)}개소 실측')
-print(f'[측정소명 매칭 결과]')
+print('[측정소명 매칭 결과]')
 for s in result['stations']:
     m = s.get('station_matched', '폴백')
     status = f'OK ({m})' if s.get('live') else 'FALLBACK'
