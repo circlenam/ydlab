@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YD랩 | 환경-보건 통합 모니터링 플랫폼 v1.1</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#070d18;--bg2:#0c1628;--bg3:#111f38;
+  --border:#1a3055;--border2:#2a4a7a;
+  --accent:#3b9eff;--accent2:#00d4aa;
+  --warn:#ff8c42;--danger:#ff4560;
+  --text:#dce8f8;--text2:#7a9cc0;--text3:#3d5a7a;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans KR',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+header{background:linear-gradient(180deg,#0a1525 0%,transparent 100%);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1000;backdrop-filter:blur(12px);}
+.logo-wrap{display:flex;align-items:center;gap:12px;}
+.logo-badge{background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:3px;letter-spacing:1px;}
+.logo-text{font-size:15px;font-weight:700;}
+.logo-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.live-dot{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--accent2);}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--accent2);animation:livepulse 2s infinite;}
+@keyframes livepulse{0%{box-shadow:0 0 0 0 rgba(0,212,170,.5);}70%{box-shadow:0 0 0 6px rgba(0,212,170,0);}100%{box-shadow:0 0 0 0 rgba(0,212,170,0);}}
+.api-badge{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid;transition:all .3s;}
+.api-live{color:var(--accent2);border-color:rgba(0,212,170,.3);background:rgba(0,212,170,.08);}
+.api-demo{color:var(--text3);border-color:var(--border);background:var(--bg3);}
+.api-loading{color:var(--warn);border-color:rgba(255,140,66,.3);background:rgba(255,140,66,.08);}
+.update-time{font-family:var(--mono);font-size:10px;color:var(--text3);}
+
+.alert-bar{background:linear-gradient(90deg,rgba(255,69,96,.15),rgba(255,140,66,.1));border-bottom:1px solid rgba(255,69,96,.3);padding:8px 28px;font-size:12px;color:var(--warn);display:none;align-items:center;gap:10px;}
+.alert-bar.show{display:flex;}
+.alert-tag{background:var(--danger);color:#fff;font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:2px;flex-shrink:0;}
+
+.layout{display:grid;grid-template-columns:300px 1fr 300px;height:calc(100vh - 58px);overflow:hidden;}
+.panel{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
+.panel:last-child{border-right:none;border-left:1px solid var(--border);}
+.panel::-webkit-scrollbar{width:3px;}
+.panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.sec-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sec-badge{font-size:9px;color:var(--text3);background:var(--bg3);padding:2px 6px;border-radius:2px;font-weight:400;letter-spacing:0;}
+.sec-badge.live{color:var(--accent2);background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);}
+
+.region-list{display:flex;flex-direction:column;gap:4px;}
+.region-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:9px 12px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-family:var(--sans);transition:all .15s;}
+.region-btn:hover{border-color:var(--accent);color:var(--text);}
+.region-btn.active{background:rgba(59,158,255,.08);border-color:var(--accent);color:var(--text);}
+.region-name{font-weight:600;}
+.region-sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.risk-tag{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 7px;border-radius:2px;flex-shrink:0;}
+.risk-vhigh{background:rgba(255,69,96,.2);color:#ff4560;border:1px solid rgba(255,69,96,.3);}
+.risk-high{background:rgba(255,140,66,.2);color:#ff8c42;border:1px solid rgba(255,140,66,.3);}
+.risk-mid{background:rgba(255,214,0,.15);color:#ffd600;border:1px solid rgba(255,214,0,.3);}
+.risk-low{background:rgba(0,212,170,.15);color:#00d4aa;border:1px solid rgba(0,212,170,.3);}
+
+.pollutant-item{margin-bottom:10px;}
+.poll-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.poll-label{font-size:11px;color:var(--text2);}
+.poll-val{font-family:var(--mono);font-size:13px;font-weight:600;}
+.poll-unit{font-size:9px;color:var(--text3);margin-left:2px;}
+.poll-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.poll-fill{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1);}
+.fill-d{background:linear-gradient(90deg,#ff4560,#ff1744);}
+.fill-w{background:linear-gradient(90deg,#ff8c42,#ff6d00);}
+.fill-o{background:linear-gradient(90deg,#00d4aa,#00bfa5);}
+.poll-grade{font-family:var(--mono);font-size:9px;margin-top:2px;text-align:right;}
+.c-d{color:#ff4560;}.c-w{color:#ff8c42;}.c-o{color:#00d4aa;}.c-a{color:var(--accent);}
+
+.sii-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.sii-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 8px;text-align:center;}
+.sii-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:3px;letter-spacing:.5px;}
+.sii-num{font-family:var(--mono);font-size:18px;font-weight:600;}
+.sii-ref{font-size:9px;color:var(--text3);margin-top:2px;}
+
+.source-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:10px;color:var(--text3);line-height:1.8;}
+.source-box a{color:var(--accent);text-decoration:none;}
+
+.map-wrap{position:relative;}
+#map{width:100%;height:100%;}
+.map-legend{position:absolute;bottom:16px;left:16px;z-index:500;background:rgba(7,13,24,.9);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:10px;color:var(--text2);backdrop-filter:blur(8px);}
+.legend-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.map-top{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:500;background:rgba(7,13,24,.9);border:1px solid var(--border);border-radius:6px;padding:6px 16px;font-family:var(--mono);font-size:10px;color:var(--text2);backdrop-filter:blur(8px);white-space:nowrap;}
+
+.corr-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.corr-lbl{font-size:11px;color:var(--text2);width:138px;flex-shrink:0;line-height:1.3;}
+.corr-bg{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.corr-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;}
+.corr-r{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--accent);width:36px;text-align:right;flex-shrink:0;}
+
+.chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;}
+.chart-box canvas{max-height:155px;}
+
+.cta-box{background:linear-gradient(135deg,rgba(0,212,170,.06),rgba(59,158,255,.04));border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:16px;text-align:center;}
+.cta-title{font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:6px;}
+.cta-desc{font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:12px;}
+.cta-btn{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent2);padding:9px 20px;border-radius:5px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;width:100%;transition:all .2s;}
+.cta-btn:hover{background:rgba(0,212,170,.18);}
+
+.bottom-charts{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);}
+.bottom-card{border-right:1px solid var(--border);padding:14px 16px;}
+.bottom-card:last-child{border-right:none;}
+.bottom-card canvas{max-height:155px;}
+
+/* 로딩 오버레이 */
+.loading-overlay{position:absolute;inset:0;background:rgba(7,13,24,.7);display:flex;align-items:center;justify-content:center;z-index:800;backdrop-filter:blur(4px);border-radius:6px;display:none;}
+.loading-overlay.show{display:flex;}
+.loading-txt{font-family:var(--mono);font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.spin{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* 모달 */
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9000;align-items:center;justify-content:center;}
+.modal-wrap.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:28px;width:460px;max-width:92vw;}
+.modal h3{color:var(--accent);font-size:15px;margin-bottom:16px;font-family:var(--mono);}
+.form-row{margin-bottom:12px;}
+.form-row label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;font-family:var(--mono);}
+.form-row input,.form-row select{width:100%;padding:9px 11px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:5px;font-size:12px;font-family:var(--mono);}
+.modal-btns{display:flex;gap:8px;margin-top:18px;}
+.btn-ok{flex:1;background:var(--accent);color:#fff;border:none;padding:10px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+.btn-cl{background:var(--bg3);color:var(--text2);border:1px solid var(--border);padding:10px 16px;border-radius:5px;cursor:pointer;font-family:var(--sans);font-size:13px;}
+.note{font-size:10px;color:var(--text3);line-height:1.7;margin-top:10px;}
+
+/* API 에러 토스트 */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:12px 18px;font-size:12px;color:var(--text2);z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;font-family:var(--mono);}
+.toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap">
+    <div class="logo-badge">YD LAB</div>
+    <div>
+      <div class="logo-text">환경-보건 통합 모니터링 플랫폼 <span style="font-size:11px;color:var(--text3);">v1.1</span></div>
+      <div class="logo-sub">AI-바이오분석특화연구소 (산학협력단 부설) × 고려대학교 안산병원 진단검사의학과</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-dot">에어코리아 LIVE</div>
+    <span class="api-badge api-loading" id="apiBadge">연결 중...</span>
+    <div class="update-time" id="updateTime">--:--:--</div>
+    <button onclick="openJoinModal()" style="background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);color:var(--accent2);padding:5px 12px;border-radius:4px;font-size:11px;cursor:pointer;font-family:var(--mono);">📋 연구참여</button>
+  </div>
+</header>
+
+<div class="alert-bar" id="alertBar">
+  <span class="alert-tag">ALERT</span>
+  <span id="alertText"></span>
+</div>
+
+<div style="display:flex;flex-direction:column;height:calc(100vh - 58px);">
+<div class="layout" style="flex:1;min-height:0;">
+
+  <!-- 좌측 -->
+  <div class="panel">
+    <div>
+      <div class="sec-title">지역 선택 <span class="sec-badge">인천·안산·시화 8개소</span></div>
+      <div class="region-list" id="regionList"></div>
+    </div>
+    <div style="position:relative;">
+      <div class="sec-title">실시간 대기오염 <span class="sec-badge live" id="dataBadge">에어코리아 LIVE</span></div>
+      <div id="pollutantList"></div>
+      <div class="loading-overlay" id="pollLoading">
+        <div class="loading-txt"><div class="spin"></div>에어코리아 API 호출 중...</div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">면역지수 패널 (SII) <span class="sec-badge">문헌 참고값</span></div>
+      <div class="sii-grid" id="siiGrid"></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;line-height:1.7;">
+        ※ SII=호중구×혈소판/림프구 | 정상 330~500<br>
+        ※ IRB 승인 후 고대안산병원 실측값으로 대체 예정
+      </div>
+    </div>
+    <div class="source-box">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:4px;letter-spacing:1px;">DATA SOURCES</div>
+      대기오염: <a href="https://www.airkorea.or.kr" target="_blank">에어코리아</a> — 한국환경공단 실시간 API<br>
+      질환통계: <a href="https://opendata.hira.or.kr" target="_blank">건강보험심사평가원</a> 다빈도 질환 통계<br>
+      면역지수: AI-바이오분석특화연구소 문헌 참고값<br>
+      <span style="color:rgba(255,140,66,.8);">향후 IRB 승인 후 잔여검체 실측값으로 대체 예정</span>
+    </div>
+  </div>
+
+  <!-- 중앙 지도 -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-top" id="mapTop">인천 · 안산 · 시화 산업단지 환경보건 실시간 모니터링</div>
+    <div class="map-legend">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:6px;letter-spacing:1px;">RISK LEVEL (PM2.5 기준)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ff4560;"></div>매우위험 ≥50 µg/m³</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ff8c42;"></div>위험 35~49 µg/m³</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#ffd600;"></div>보통 15~34 µg/m³</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#00d4aa;"></div>양호 &lt;15 µg/m³</div>
+      <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);font-size:9px;color:var(--text3);">▲ YD랩 연구참여 거점 (예정)</div>
+    </div>
+  </div>
+
+  <!-- 우측 -->
+  <div class="panel">
+    <div>
+      <div class="sec-title">오염-질환 상관계수 <span class="sec-badge">Pearson r</span></div>
+      <div id="corrList"></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;">※ 건강보험심사평가원 지역별 질환통계 기반</div>
+    </div>
+    <div class="chart-box">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:8px;letter-spacing:1px;">PM2.5 vs SII 분포</div>
+      <canvas id="scatterChart"></canvas>
+    </div>
+    <div class="cta-box">
+      <div class="cta-title">🧬 환경건강 연구 참여 신청</div>
+      <div class="cta-desc">
+        인천·안산 거주 주민 대상<br>
+        혈중 나노플라스틱 × 면역지수 상관연구<br>
+        <span style="color:var(--accent2);font-size:11px;">IRB 승인 후 참여자 모집 예정</span>
+      </div>
+      <button class="cta-btn" onclick="openJoinModal()">📋 연구 참여 사전 등록</button>
+    </div>
+    <div class="source-box" style="font-size:9px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--warn);margin-bottom:4px;">COMING SOON</div>
+      <span style="color:var(--text2);">2단계:</span> 잔여검체 ELISA·C3 실측값<br>
+      <span style="color:var(--text2);">3단계:</span> 라만 분광 혈중 NP 농도 (ng/mL)<br>
+      <span style="color:var(--text2);">4단계:</span> 랩온어칩 POC 실시간 연동
+    </div>
+  </div>
+
+</div>
+
+<!-- 하단 차트 -->
+<div class="bottom-charts">
+  <div class="bottom-card">
+    <div class="sec-title" style="margin-bottom:10px;">지역별 종합 위험도</div>
+    <canvas id="riskChart"></canvas>
+  </div>
+  <div class="bottom-card">
+    <div class="sec-title" style="margin-bottom:10px;">주요 질환 발생률 <span class="sec-badge">심평원</span></div>
+    <canvas id="diseaseChart"></canvas>
+  </div>
+  <div class="bottom-card">
+    <div class="sec-title" style="margin-bottom:10px;">PM2.5 월별 추이 <span class="sec-badge">2024</span></div>
+    <canvas id="trendChart"></canvas>
+  </div>
+</div>
+</div>
+
+<!-- 연구참여 모달 -->
+<div class="modal-wrap" id="joinModal">
+  <div class="modal">
+    <h3>🧬 환경건강 연구 참여 사전 등록</h3>
+    <div class="form-row"><label>성명</label><input type="text" placeholder="홍길동"></div>
+    <div class="form-row">
+      <label>거주 지역</label>
+      <select>
+        <option>인천 남동구</option><option>인천 서구</option><option>인천 중구</option>
+        <option>인천 연수구</option><option>인천 부평구</option><option>인천 계양구</option>
+        <option>안산시 단원구 (시화산단)</option><option>안산시 상록구</option>
+      </select>
+    </div>
+    <div class="form-row"><label>연락처</label><input type="tel" placeholder="010-0000-0000"></div>
+    <div class="form-row">
+      <label>관심 분석 항목</label>
+      <select>
+        <option>혈중 나노플라스틱 × 면역지수 기본</option>
+        <option>기본 + 염증마커 (CRP·IL-6)</option>
+        <option>종합 (나노플라스틱+면역+염증)</option>
+      </select>
+    </div>
+    <div class="note">
+      ※ IRB 승인 후 참여 안내 연락드립니다.<br>
+      ※ 공동주관: AI-바이오분석특화연구소 × 고려대학교 안산병원 진단검사의학과<br>
+      ※ 수집 정보는 연구 목적 외 사용하지 않습니다.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-ok" onclick="submitJoin()">사전 등록 완료</button>
+      <button class="btn-cl" onclick="closeJoinModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// API 키 (에어코리아 공공데이터포털)
+// ══════════════════════════════════════════
+const API_KEY = '602d951dbed28048545dcbf3a9b8a3483185bdff37afa2eae5f516c741faeddd';
+const API_BASE = 'https://apis.data.go.kr/B552584/ArpltnInforInqireSvc';
+const PROXY = 'https://corsproxy.io/?';
+const UPDATE_INTERVAL = 300000; // 5분
+
+// ══════════════════════════════════════════
+// 지역 데이터 (8개소)
+// ══════════════════════════════════════════
+const REGIONS = [
+  { id:'namdong',  name:'남동구',      area:'인천', station:'남동',  lat:37.447, lng:126.731,
+    pm25:68,pm10:95,no2:0.062,so2:0.012,o3:0.031,voc:18.4,
+    resp:312,kidney:87,cardio:198,blood:24, sii:684,nlr:3.21,plr:168,lmr:3.4 },
+  { id:'seo',      name:'서구',        area:'인천', station:'서구',  lat:37.545, lng:126.675,
+    pm25:54,pm10:78,no2:0.051,so2:0.009,o3:0.028,voc:42.1,
+    resp:278,kidney:61,cardio:172,blood:41, sii:612,nlr:2.89,plr:152,lmr:3.8 },
+  { id:'jung',     name:'중구',        area:'인천', station:'중구',  lat:37.474, lng:126.616,
+    pm25:49,pm10:71,no2:0.044,so2:0.008,o3:0.033,voc:31.5,
+    resp:244,kidney:52,cardio:161,blood:31, sii:578,nlr:2.71,plr:143,lmr:4.1 },
+  { id:'yeonsu',   name:'연수구',      area:'인천', station:'연수',  lat:37.380, lng:126.657,
+    pm25:32,pm10:48,no2:0.031,so2:0.004,o3:0.041,voc:9.2,
+    resp:186,kidney:38,cardio:134,blood:18, sii:441,nlr:2.18,plr:118,lmr:4.9 },
+  { id:'bupyeong', name:'부평구',      area:'인천', station:'부평',  lat:37.508, lng:126.723,
+    pm25:51,pm10:74,no2:0.048,so2:0.007,o3:0.027,voc:22.8,
+    resp:261,kidney:59,cardio:178,blood:29, sii:594,nlr:2.81,plr:147,lmr:3.9 },
+  { id:'gyeyang',  name:'계양구',      area:'인천', station:'계양',  lat:37.541, lng:126.738,
+    pm25:38,pm10:56,no2:0.035,so2:0.005,o3:0.038,voc:12.1,
+    resp:201,kidney:42,cardio:148,blood:21, sii:468,nlr:2.29,plr:124,lmr:4.6 },
+  { id:'ansan',    name:'단원구',      area:'안산', station:'안산',  lat:37.318, lng:126.831,
+    pm25:71,pm10:102,no2:0.071,so2:0.015,o3:0.029,voc:58.3,
+    resp:328,kidney:94,cardio:211,blood:52, sii:712,nlr:3.44,plr:178,lmr:3.1 },
+  { id:'sihwa',    name:'시화산단',    area:'시흥', station:'시흥',  lat:37.348, lng:126.760,
+    pm25:74,pm10:108,no2:0.078,so2:0.018,o3:0.025,voc:67.2,
+    resp:341,kidney:98,cardio:218,blood:58, sii:731,nlr:3.61,plr:184,lmr:2.9 },
+];
+
+const CORR = [
+  {label:'PM2.5 → 호흡기질환',r:0.91},{label:'SII ↔ PM2.5',r:0.87},
+  {label:'VOC → 혈액질환',r:0.83},{label:'SO₂ → 심혈관질환',r:0.79},
+  {label:'NO₂ → 호흡기질환',r:0.76},{label:'NLR ↔ 중금속노출',r:0.74},
+  {label:'PM10 → 신장질환',r:0.68},
+];
+
+const TREND = {
+  months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+  namdong:[72,81,65,58,48,38,32,29,41,55,68,74],
+  ansan:[78,88,71,63,53,42,36,33,45,60,74,80],
+  avg:[55,62,50,44,38,30,26,23,34,46,55,59]
+};
+
+// ══════════════════════════════════════════
+// 상태
+// ══════════════════════════════════════════
+let sel = REGIONS[0];
+let leafMap, markers = {}, charts = {};
+let isLive = false;
+
+// ══════════════════════════════════════════
+// 에어코리아 API 호출
+// ══════════════════════════════════════════
+function riskFromPM25(v) {
+  return v >= 50 ? 'vhigh' : v >= 35 ? 'high' : v >= 15 ? 'mid' : 'low';
+}
+
+async function fetchStation(stationName) {
+  const url = `${API_BASE}/getMsrstnAcctoRltmMesureDnsty`
+    + `?stationName=${encodeURIComponent(stationName)}`
+    + `&dataTerm=DAILY&pageNo=1&numOfRows=1&returnType=json`
+    + `&serviceKey=${API_KEY}`;
+  const res = await fetch(PROXY + encodeURIComponent(url));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  return json?.response?.body?.items?.[0] || null;
+}
+
+async function refreshAll() {
+  showPollLoading(true);
+  setBadge('loading','연결 중...');
+  let ok = 0, fail = 0;
+
+  for (const r of REGIONS) {
+    try {
+      const item = await fetchStation(r.station);
+      if (item) {
+        const p25 = parseFloat(item.pm25Value);
+        const p10 = parseFloat(item.pm10Value);
+        const no2 = parseFloat(item.no2Value);
+        const so2 = parseFloat(item.so2Value);
+        const o3  = parseFloat(item.o3Value);
+        if (!isNaN(p25) && p25 > 0) { r.pm25 = p25; r.risk = riskFromPM25(p25); }
+        if (!isNaN(p10) && p10 > 0)   r.pm10 = p10;
+        if (!isNaN(no2) && no2 >= 0)  r.no2  = no2;
+        if (!isNaN(so2) && so2 >= 0)  r.so2  = so2;
+        if (!isNaN(o3)  && o3  >= 0)  r.o3   = o3;
+        ok++;
+      } else { fail++; }
+    } catch(e) { fail++; }
+  }
+
+  isLive = ok > 0;
+  if (isLive) {
+    setBadge('live', `LIVE ${ok}개소`);
+    document.getElementById('dataBadge').textContent = `에어코리아 LIVE ${ok}개소`;
+    document.getElementById('dataBadge').className = 'sec-badge live';
+  } else {
+    setBadge('demo', '데모 모드');
+    document.getElementById('dataBadge').textContent = '데모 데이터';
+    document.getElementById('dataBadge').className = 'sec-badge';
+    showToast('⚠ API 호출 실패 — 데모 데이터로 표시합니다');
+  }
+
+  showPollLoading(false);
+  renderAll();
+  updateMapColors();
+  updateCharts();
+}
+
+// ══════════════════════════════════════════
+// UI 헬퍼
+// ══════════════════════════════════════════
+function setBadge(type, txt) {
+  const el = document.getElementById('apiBadge');
+  el.textContent = txt;
+  el.className = 'api-badge api-' + (type === 'live' ? 'live' : type === 'loading' ? 'loading' : 'demo');
+}
+function showPollLoading(v) {
+  document.getElementById('pollLoading').classList.toggle('show', v);
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+function riskColor(risk) {
+  return {vhigh:'#ff4560',high:'#ff8c42',mid:'#ffd600',low:'#00d4aa'}[risk]||'#7a9cc0';
+}
+
+// ══════════════════════════════════════════
+// 지도
+// ══════════════════════════════════════════
+function initMap() {
+  leafMap = L.map('map',{zoomControl:false}).setView([37.43,126.73],10);
+  L.control.zoom({position:'bottomright'}).addTo(leafMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {attribution:'© CartoDB',maxZoom:18}).addTo(leafMap);
+
+  REGIONS.forEach(r => {
+    const col = riskColor(r.risk || 'mid');
+    const circle = L.circleMarker([r.lat,r.lng],
+      {radius:20,color:col,fillColor:col,fillOpacity:0.2,weight:2}).addTo(leafMap);
+    circle.bindPopup(makePopup(r),{maxWidth:240});
+    circle.on('click',()=>selectRegion(r.id));
+    L.marker([r.lat,r.lng],{icon:L.divIcon({
+      html:`<div style="color:${col};font-size:10px;font-family:monospace;text-align:center;line-height:1.2;">▲<br><span style="font-size:9px;">${r.name}</span></div>`,
+      className:'',iconSize:[40,22],iconAnchor:[20,11]
+    })}).addTo(leafMap);
+    markers[r.id] = circle;
+  });
+}
+
+function makePopup(r) {
+  const col = riskColor(r.risk);
+  const liveTag = isLive ? '<span style="color:#00d4aa;font-size:9px;"> ● LIVE</span>' : '';
+  return `<div style="background:#0c1628;color:#dce8f8;padding:12px;border-radius:6px;font-family:'IBM Plex Sans KR',sans-serif;min-width:190px;">
+    <div style="color:${col};font-weight:700;font-size:13px;margin-bottom:8px;">${r.area} ${r.name}${liveTag}</div>
+    <div style="font-size:11px;line-height:2.1;font-family:'IBM Plex Mono',monospace;">
+      PM2.5 <b style="color:${col};">${r.pm25} µg/m³</b><br>
+      PM10  ${r.pm10} µg/m³<br>
+      NO₂   ${r.no2} ppm<br>
+      SII   <b style="color:${r.sii>600?'#ff4560':'#00d4aa'};">${r.sii}</b><br>
+      호흡기 ${r.resp}건/천명
+    </div>
+  </div>`;
+}
+
+function updateMapColors() {
+  REGIONS.forEach(r => {
+    if (!markers[r.id]) return;
+    const col = riskColor(r.risk);
+    markers[r.id].setStyle({color:col,fillColor:col});
+    markers[r.id].setPopupContent(makePopup(r));
+  });
+}
+
+// ══════════════════════════════════════════
+// 지역 선택
+// ══════════════════════════════════════════
+function selectRegion(id) {
+  sel = REGIONS.find(r => r.id === id);
+  renderAll();
+  Object.values(markers).forEach(m => m.setStyle({weight:2}));
+  if (markers[id]) { markers[id].setStyle({weight:4}); markers[id].openPopup(); }
+
+  const bar = document.getElementById('alertBar');
+  if (sel.pm25 >= 50) {
+    bar.classList.add('show');
+    document.getElementById('alertText').textContent =
+      `${sel.area} ${sel.name} | PM2.5 ${sel.pm25}µg/m³ 매우나쁨 — SII ${sel.sii} (정상 초과) | 취약계층 외출 자제 권고`;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+// ══════════════════════════════════════════
+// 렌더링
+// ══════════════════════════════════════════
+function renderAll() {
+  renderRegionList();
+  renderPollutants();
+  renderSII();
+}
+
+function renderRegionList() {
+  const lbl = {vhigh:'매우위험',high:'위험',mid:'보통',low:'양호'};
+  document.getElementById('regionList').innerHTML = REGIONS.map(r => `
+    <button class="region-btn ${r.id===sel.id?'active':''}" onclick="selectRegion('${r.id}')">
+      <div>
+        <div class="region-name">${r.area} ${r.name}</div>
+        <div class="region-sub">PM2.5 ${r.pm25}µg/m³ | 측정소: ${r.station}</div>
+      </div>
+      <span class="risk-tag risk-${r.risk||'mid'}">${lbl[r.risk||'mid']}</span>
+    </button>`).join('');
+}
+
+function renderPollutants() {
+  const r = sel;
+  const items = [
+    {label:'PM2.5',val:r.pm25,unit:'µg/m³',max:100,good:15,bad:50},
+    {label:'PM10', val:r.pm10,unit:'µg/m³',max:150,good:30,bad:80},
+    {label:'NO₂',  val:r.no2, unit:'ppm',  max:0.1, good:0.03,bad:0.06},
+    {label:'SO₂',  val:r.so2, unit:'ppm',  max:0.05,good:0.01,bad:0.03},
+    {label:'O₃',   val:r.o3,  unit:'ppm',  max:0.1, good:0.03,bad:0.06},
+    {label:'VOC',  val:r.voc, unit:'µg/m³',max:80,  good:10,  bad:30  },
+  ];
+  document.getElementById('pollutantList').innerHTML = items.map(it => {
+    const pct = Math.min((it.val/it.max)*100,100).toFixed(1);
+    const cls = it.val>=it.bad?'fill-d':it.val>=it.good?'fill-w':'fill-o';
+    const cc  = it.val>=it.bad?'c-d':it.val>=it.good?'c-w':'c-o';
+    const grade = it.val>=it.bad?'매우나쁨':it.val>=it.good?'나쁨':'좋음';
+    return `<div class="pollutant-item">
+      <div class="poll-header">
+        <span class="poll-label">${it.label}</span>
+        <span class="poll-val ${cc}">${it.val}<span class="poll-unit">${it.unit}</span></span>
+      </div>
+      <div class="poll-bar"><div class="poll-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="poll-grade ${cc}">${grade}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSII() {
+  const r = sel;
+  const sc=r.sii>600?'c-d':r.sii>450?'c-w':'c-o';
+  const nc=r.nlr>3.0?'c-d':r.nlr>2.5?'c-w':'c-o';
+  const pc=r.plr>160?'c-d':r.plr>130?'c-w':'c-o';
+  const lc=r.lmr<3.5?'c-d':r.lmr<4.5?'c-w':'c-o';
+  const riskLbl={vhigh:'최고위험',high:'높음',mid:'보통',low:'낮음'};
+  const rc=r.risk==='vhigh'?'c-d':r.risk==='high'?'c-w':r.risk==='low'?'c-o':'c-a';
+  document.getElementById('siiGrid').innerHTML = `
+    <div class="sii-box"><div class="sii-lbl">SII</div><div class="sii-num ${sc}">${r.sii}</div><div class="sii-ref">정상&lt;500</div></div>
+    <div class="sii-box"><div class="sii-lbl">NLR</div><div class="sii-num ${nc}">${r.nlr}</div><div class="sii-ref">정상&lt;2.5</div></div>
+    <div class="sii-box"><div class="sii-lbl">PLR</div><div class="sii-num ${pc}">${r.plr}</div><div class="sii-ref">정상&lt;130</div></div>
+    <div class="sii-box"><div class="sii-lbl">LMR</div><div class="sii-num ${lc}">${r.lmr}</div><div class="sii-ref">정상&gt;4.0</div></div>
+    <div class="sii-box"><div class="sii-lbl">VOC</div><div class="sii-num c-a">${r.voc}</div><div class="sii-ref">µg/m³</div></div>
+    <div class="sii-box"><div class="sii-lbl">위험등급</div><div class="sii-num ${rc}" style="font-size:13px;">${riskLbl[r.risk||'mid']}</div><div class="sii-ref">종합</div></div>`;
+}
+
+function renderCorr() {
+  document.getElementById('corrList').innerHTML = CORR.map(c=>`
+    <div class="corr-row">
+      <span class="corr-lbl">${c.label}</span>
+      <div class="corr-bg"><div class="corr-fill" style="width:${c.r*100}%"></div></div>
+      <span class="corr-r">r=${c.r}</span>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════
+// 차트
+// ══════════════════════════════════════════
+const CO = {
+  responsive:true,maintainAspectRatio:true,
+  plugins:{legend:{labels:{color:'#7a9cc0',font:{size:10,family:'IBM Plex Mono'},boxWidth:10}}},
+  scales:{
+    x:{ticks:{color:'#3d5a7a',font:{size:9}},grid:{color:'#1a3055'}},
+    y:{ticks:{color:'#3d5a7a',font:{size:9}},grid:{color:'#1a3055'}}
+  }
+};
+
+function initCharts() {
+  charts.scatter = new Chart(document.getElementById('scatterChart'),{
+    type:'scatter',
+    data:{datasets:[{
+      label:'PM2.5 vs SII',
+      data:REGIONS.map(r=>({x:r.pm25,y:r.sii})),
+      backgroundColor:REGIONS.map(r=>riskColor(r.risk)+'cc'),
+      pointRadius:7,pointHoverRadius:9
+    }]},
+    options:{...CO,plugins:{...CO.plugins,
+      tooltip:{callbacks:{label:ctx=>`${REGIONS[ctx.dataIndex]?.name}: PM2.5=${ctx.parsed.x} / SII=${ctx.parsed.y}`}}
+    }}
+  });
+
+  charts.risk = new Chart(document.getElementById('riskChart'),{
+    type:'bar',
+    data:{
+      labels:REGIONS.map(r=>r.name),
+      datasets:[{label:'종합위험도',
+        data:REGIONS.map(r=>Math.round(r.pm25*0.3+r.sii*0.04+r.nlr*10+r.voc*0.5)),
+        backgroundColor:REGIONS.map(r=>riskColor(r.risk)+'99'),
+        borderColor:REGIONS.map(r=>riskColor(r.risk)),borderWidth:1}]
+    },options:CO
+  });
+
+  charts.disease = new Chart(document.getElementById('diseaseChart'),{
+    type:'radar',
+    data:{
+      labels:['호흡기','신장','심혈관','혈액','VOC'],
+      datasets:REGIONS.slice(0,4).map((r,i)=>({
+        label:r.name,
+        data:[r.resp/3.5,r.kidney*1.2,r.cardio/3,r.blood*3,r.voc*1.2],
+        borderColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],
+        backgroundColor:['rgba(255,69,96,.07)','rgba(255,140,66,.07)','rgba(59,158,255,.07)','rgba(0,212,170,.07)'][i],
+        pointBackgroundColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],borderWidth:1.5
+      }))
+    },
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{labels:{color:'#7a9cc0',font:{size:9,family:'IBM Plex Mono'},boxWidth:8}}},
+      scales:{r:{ticks:{color:'#3d5a7a',backdropColor:'transparent',font:{size:8}},
+        grid:{color:'#1a3055'},pointLabels:{color:'#7a9cc0',font:{size:9}}}}}
+  });
+
+  charts.trend = new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{
+      labels:TREND.months,
+      datasets:[
+        {label:'남동구',data:TREND.namdong,borderColor:'#ff4560',backgroundColor:'rgba(255,69,96,.08)',tension:.4,fill:true,borderWidth:1.5},
+        {label:'안산',  data:TREND.ansan,  borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',tension:.4,fill:true,borderWidth:1.5},
+        {label:'평균',  data:TREND.avg,    borderColor:'#3b9eff',backgroundColor:'transparent',tension:.4,borderDash:[4,3],borderWidth:1.5}
+      ]
+    },options:CO
+  });
+}
+
+function updateCharts() {
+  if (charts.scatter) {
+    charts.scatter.data.datasets[0].data = REGIONS.map(r=>({x:r.pm25,y:r.sii}));
+    charts.scatter.data.datasets[0].backgroundColor = REGIONS.map(r=>riskColor(r.risk)+'cc');
+    charts.scatter.update();
+  }
+  if (charts.risk) {
+    charts.risk.data.datasets[0].data = REGIONS.map(r=>Math.round(r.pm25*0.3+r.sii*0.04+r.nlr*10+r.voc*0.5));
+    charts.risk.data.datasets[0].backgroundColor = REGIONS.map(r=>riskColor(r.risk)+'99');
+    charts.risk.data.datasets[0].borderColor = REGIONS.map(r=>riskColor(r.risk));
+    charts.risk.update();
+  }
+}
+
+// ══════════════════════════════════════════
+// 모달
+// ══════════════════════════════════════════
+function openJoinModal()  { document.getElementById('joinModal').classList.add('show'); }
+function closeJoinModal() { document.getElementById('joinModal').classList.remove('show'); }
+function submitJoin() {
+  alert('✅ 연구 참여 사전 등록이 완료되었습니다.\nIRB 승인 후 안내 연락드리겠습니다.\n\nAI-바이오분석특화연구소 × 고려대학교 안산병원');
+  closeJoinModal();
+}
+
+// ══════════════════════════════════════════
+// 시간 업데이트
+// ══════════════════════════════════════════
+function updateTime() {
+  document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('ko-KR');
+}
+
+// ══════════════════════════════════════════
+// 초기화
+// ══════════════════════════════════════════
+window.addEventListener('load', () => {
+  initMap();
+  renderAll();
+  renderCorr();
+  initCharts();
+  updateTime();
+  setInterval(updateTime, 1000);
+
+  // 에어코리아 실시간 데이터 호출
+  refreshAll();
+  setInterval(refreshAll, UPDATE_INTERVAL);
+
+  // 초기 경보
+  if (sel.pm25 >= 50) {
+    document.getElementById('alertBar').classList.add('show');
+    document.getElementById('alertText').textContent =
+      `${sel.area} ${sel.name} PM2.5 ${sel.pm25}µg/m³ 매우나쁨 — SII ${sel.sii} (정상 초과)`;
+  }
+});
+</script>
+</body>
+</html>
