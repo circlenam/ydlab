@@ -1,0 +1,35 @@
+name: 에어코리아 데이터 자동 수집
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch-air-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: requests 설치
+        run: pip install requests
+
+      - name: 에어코리아 데이터 수집
+        run: python fetch_air.py
+
+      - name: 데이터 파일 커밋 및 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/airdata.json
+          git diff --staged --quiet || git commit -m "데이터 자동 업데이트: $(date +'%Y-%m-%d %H:%M') KST"
+          git push
