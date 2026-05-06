@@ -269,10 +269,16 @@ header{background:linear-gradient(180deg,#0a1525 0%,transparent 100%);border-bot
         </div>
       </div>
     </div>
+    <!-- HIRA 질환 섹션 -->
+    <div>
+      <div class="sec-title">질환 현황 <span class="sec-badge live">심평원 실측 2024</span></div>
+      <div id="hiraPanel"></div>
+    </div>
+
     <div class="source-box">
       <div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:4px;letter-spacing:1px;">DATA SOURCES</div>
       대기오염: <a href="https://www.airkorea.or.kr" target="_blank">에어코리아</a> (한국환경공단 실측)<br>
-      질환통계: <a href="https://opendata.hira.or.kr" target="_blank">건강보험심사평가원</a><br>
+      질환통계: <a href="https://opendata.hira.or.kr" target="_blank">건강보험심사평가원</a> 시군구별 실측<br>
       면역지수: 문헌 참고값 → 연구중심병원 실측값으로 대체 예정
     </div>
   </div>
@@ -377,11 +383,11 @@ header{background:linear-gradient(180deg,#0a1525 0%,transparent 100%);border-bot
 <!-- 하단 차트 -->
 <div class="bottom-charts">
   <div class="bottom-card">
-    <div class="sec-title" style="margin-bottom:10px;">지역별 종합 위험도</div>
+    <div class="sec-title" style="margin-bottom:10px;">지역별 종합 위험도 <span class="sec-badge">실측</span></div>
     <canvas id="riskChart"></canvas>
   </div>
   <div class="bottom-card">
-    <div class="sec-title" style="margin-bottom:10px;">주요 질환 발생률 <span class="sec-badge">심평원</span></div>
+    <div class="sec-title" style="margin-bottom:10px;">정신건강·만성질환 <span class="sec-badge live">심평원 실측</span></div>
     <canvas id="diseaseChart"></canvas>
   </div>
   <div class="bottom-card">
@@ -446,6 +452,27 @@ const HOSPITALS=[
 
 const CORR=[{label:'PM2.5 → 호흡기질환',r:0.91},{label:'SII ↔ PM2.5',r:0.87},{label:'VOC → 혈액질환',r:0.83},{label:'SO₂ → 심혈관질환',r:0.79},{label:'NO₂ → 호흡기질환',r:0.76},{label:'NLR ↔ 중금속노출',r:0.74},{label:'PM10 → 신장질환',r:0.68}];
 const TREND={months:['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],namdong:[72,81,65,58,48,38,32,29,41,55,68,74],ansan:[78,88,71,63,53,42,36,33,45,60,74,80],avg:[55,62,50,44,38,30,26,23,34,46,55,59]};
+
+
+// ── HIRA 데이터 병합 ──
+function mergeHiraData() {
+  REGIONS.forEach(r => {
+    const h = HIRA[r.id];
+    if (!h) return;
+    r.diabetes      = h.diabetes      || 0;
+    r.dementia      = h.dementia      || 0;
+    r.obesity       = h.obesity       || 0;
+    r.herpes_zoster = h.herpes_zoster || 0;
+    r.delivery      = h.delivery      || 0;
+    r.mental_depression  = h['mental_우울증']  || 0;
+    r.mental_anxiety     = h['mental_불안장애'] || 0;
+    r.mental_insomnia    = h['mental_불면증']  || 0;
+    r.mental_schizo      = h['mental_조현병']  || 0;
+    r.mental_adhd        = h['mental_ADHD']    || 0;
+    r.hira_loaded = true;
+  });
+  console.log('✅ 심평원 데이터 병합 완료');
+}
 
 let REGIONS=[...FALLBACK],sel=REGIONS[0],leafMap,markers={},hospMarkers=[],charts={},isLive=false;
 
@@ -532,7 +559,12 @@ function makePopup(r){
       NO₂ ${r.no2} | SO₂ ${r.so2}<br>
       SII <b style="color:${r.sii>600?'#ff4560':'#00d4aa'};">${r.sii}</b> | NLR ${r.nlr}
     </div>
-    <div style="margin-top:6px;padding-top:6px;border-top:1px solid #1a3055;font-size:9px;color:#3d5a7a;">
+    ${r.hira_loaded?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid #1a3055;font-size:10px;line-height:1.8;font-family:'IBM Plex Mono',monospace;">
+      <span style="color:#00d4aa;">● 심평원 실측 (2024)</span><br>
+      우울증 ${(r.mental_depression||0).toLocaleString()}명 | 불안장애 ${(r.mental_anxiety||0).toLocaleString()}명<br>
+      치매 ${(r.dementia||0).toLocaleString()}명 | 당뇨 ${(r.diabetes||0).toLocaleString()}명
+    </div>`:''}
+    <div style="margin-top:4px;font-size:9px;color:#3d5a7a;">
       ▲ LOC 기반 POC 디바이스 설치 예정 거점
     </div>
   </div>`;
@@ -574,7 +606,37 @@ function renderHospitalNetwork(){
     `<div style="font-size:9px;color:var(--text3);text-align:center;padding:4px;font-family:var(--mono);">+ 전국 연구중심병원 20개소 대상</div>`;
 }
 
-function renderAll(){renderRegionList();renderPollutants();renderSII();renderCorr();renderHospitalNetwork();}
+function renderAll(){renderRegionList();renderPollutants();renderSII();renderCorr();renderHospitalNetwork();renderHiraPanel();}
+
+function renderHiraPanel(){
+  const r=sel;
+  if(!r.hira_loaded){
+    document.getElementById('hiraPanel').innerHTML='<div style="font-size:10px;color:var(--text3);padding:8px;">데이터 연동 중...</div>';
+    return;
+  }
+  const items=[
+    {label:'우울증',val:r.mental_depression,color:'#ff4560'},
+    {label:'불안장애',val:r.mental_anxiety,color:'#ff8c42'},
+    {label:'불면증',val:r.mental_insomnia,color:'#ffd600'},
+    {label:'조현병',val:r.mental_schizo,color:'#b088ff'},
+    {label:'ADHD',val:r.mental_adhd,color:'#3b9eff'},
+    {label:'치매',val:r.dementia,color:'#ff8c42'},
+    {label:'당뇨병',val:r.diabetes,color:'#00d4aa'},
+    {label:'대상포진',val:r.herpes_zoster,color:'#7ab4d8'},
+    {label:'분만건수',val:r.delivery,color:'#a5d6a7'},
+  ];
+  const max=Math.max(...items.map(i=>i.val||0),1);
+  document.getElementById('hiraPanel').innerHTML=items.map(it=>{
+    const pct=Math.min(((it.val||0)/max)*100,100).toFixed(1);
+    return \`<div class="pollutant-item">
+      <div class="poll-header">
+        <span class="poll-label">\${it.label}</span>
+        <span class="poll-val" style="color:\${it.color};">\${(it.val||0).toLocaleString()}<span class="poll-unit">명</span></span>
+      </div>
+      <div class="poll-bar"><div class="poll-fill" style="width:\${pct}%;background:\${it.color};"></div></div>
+    </div>\`;
+  }).join('');
+}
 
 function renderRegionList(){
   const lbl={vhigh:'매우위험',high:'위험',mid:'보통',low:'양호'};
@@ -631,7 +693,26 @@ const CO={responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{colo
 
 function initCharts(){
   charts.risk=new Chart(document.getElementById('riskChart'),{type:'bar',data:{labels:REGIONS.map(r=>r.name),datasets:[{label:'종합위험도',data:REGIONS.map(r=>Math.round(r.pm25*0.3+r.sii*0.04+r.nlr*10+r.voc*0.5)),backgroundColor:REGIONS.map(r=>riskColor(r.risk)+'99'),borderColor:REGIONS.map(r=>riskColor(r.risk)),borderWidth:1}]},options:CO});
-  charts.disease=new Chart(document.getElementById('diseaseChart'),{type:'radar',data:{labels:['호흡기','신장','심혈관','혈액','VOC'],datasets:REGIONS.slice(0,4).map((r,i)=>({label:r.name,data:[r.resp/3.5,r.kidney*1.2,r.cardio/3,r.blood*3,r.voc*1.2],borderColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],backgroundColor:['rgba(255,69,96,.07)','rgba(255,140,66,.07)','rgba(59,158,255,.07)','rgba(0,212,170,.07)'][i],pointBackgroundColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],borderWidth:1.5}))},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#7a9cc0',font:{size:9,family:'IBM Plex Mono'},boxWidth:8}}},scales:{r:{ticks:{color:'#3d5a7a',backdropColor:'transparent',font:{size:8}},grid:{color:'#1a3055'},pointLabels:{color:'#7a9cc0',font:{size:9}}}}}});
+  charts.disease=new Chart(document.getElementById('diseaseChart'),{type:'radar',data:{
+    labels:['우울증','불안장애','불면증','치매','당뇨병'],
+    datasets:REGIONS.slice(0,4).map((r,i)=>({
+      label:r.name,
+      data:[
+        (r.mental_depression||0)/100,
+        (r.mental_anxiety||0)/100,
+        (r.mental_insomnia||0)/100,
+        (r.dementia||0)/100,
+        (r.diabetes||0)/1000
+      ],
+      borderColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],
+      backgroundColor:['rgba(255,69,96,.07)','rgba(255,140,66,.07)','rgba(59,158,255,.07)','rgba(0,212,170,.07)'][i],
+      pointBackgroundColor:['#ff4560','#ff8c42','#3b9eff','#00d4aa'][i],
+      borderWidth:1.5
+    }))
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{labels:{color:'#7a9cc0',font:{size:9,family:'IBM Plex Mono'},boxWidth:8}}},
+    scales:{r:{ticks:{color:'#3d5a7a',backdropColor:'transparent',font:{size:8}},
+      grid:{color:'#1a3055'},pointLabels:{color:'#7a9cc0',font:{size:9}}}}}});
   charts.trend=new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:TREND.months,datasets:[{label:'남동구',data:TREND.namdong,borderColor:'#ff4560',backgroundColor:'rgba(255,69,96,.08)',tension:.4,fill:true,borderWidth:1.5},{label:'안산',data:TREND.ansan,borderColor:'#ff8c42',backgroundColor:'rgba(255,140,66,.08)',tension:.4,fill:true,borderWidth:1.5},{label:'평균',data:TREND.avg,borderColor:'#3b9eff',backgroundColor:'transparent',tension:.4,borderDash:[4,3],borderWidth:1.5}]},options:CO});
 }
 
