@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-13 22:30 KST",
+  "updated": "2026-08-13 23:30 KST",
   "source": "한국환경공단 에어코리아",
   "stations": [
     {
@@ -12,99 +12,43 @@
       "id": "seo",
       "name": "서구",
       "area": "인천",
-      "pm25": 10.0,
-      "pm10": 18.0,
-      "no2": 0.017,
-      "so2": 0.003,
-      "o3": 0.011,
-      "co": 0.3,
-      "station_matched": "청라",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "jung",
       "name": "중구",
       "area": "인천",
-      "pm25": 7.0,
-      "pm10": 10.0,
-      "no2": 0.014,
-      "so2": 0.003,
-      "o3": 0.011,
-      "co": 0.2,
-      "station_matched": "중구",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "yeonsu",
       "name": "연수구",
       "area": "인천",
-      "pm25": 7.0,
-      "pm10": 20.0,
-      "no2": 0.022,
-      "so2": 0.003,
-      "o3": 0.007,
-      "co": 0.4,
-      "station_matched": "송도",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "bupyeong",
       "name": "부평구",
       "area": "인천",
-      "pm25": 5.0,
-      "pm10": 14.0,
-      "no2": 0.012,
-      "so2": 0.002,
-      "o3": 0.015,
-      "co": 0.3,
-      "station_matched": "부평",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "gyeyang",
       "name": "계양구",
       "area": "인천",
-      "pm25": 3.0,
-      "pm10": 12.0,
-      "no2": 0.006,
-      "so2": 0.004,
-      "o3": 0.022,
-      "co": 0.4,
-      "station_matched": "계산",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "ansan",
       "name": "단원구",
       "area": "안산",
-      "pm25": 5.0,
-      "pm10": 4.0,
-      "no2": 0.018,
-      "so2": 0.002,
-      "o3": 0.005,
-      "co": 0.2,
-      "station_matched": "고잔동",
-      "risk": "low",
-      "live": true
+      "live": false
     },
     {
       "id": "sihwa",
       "name": "시화산단",
       "area": "시흥",
-      "pm25": 15.0,
-      "pm10": 46.0,
-      "no2": 0.026,
-      "so2": 0.004,
-      "o3": 0.003,
-      "co": 0.4,
-      "station_matched": "배곧동",
-      "risk": "mid",
-      "live": true
+      "live": false
     }
   ]
 }
