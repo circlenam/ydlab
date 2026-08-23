@@ -1,36 +1,76 @@
 {
-  "updated": "2026-08-23 12:18 KST",
+  "updated": "2026-08-23 13:25 KST",
   "source": "한국환경공단 에어코리아",
   "stations": [
     {
       "id": "namdong",
       "name": "남동구",
       "area": "인천",
-      "live": false
+      "pm25": 5.0,
+      "pm10": 9.0,
+      "no2": 0.022,
+      "so2": 0.004,
+      "o3": 0.008,
+      "co": 0.3,
+      "station_matched": "남동",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "seo",
       "name": "서구",
       "area": "인천",
-      "live": false
+      "pm25": 5.0,
+      "pm10": 9.0,
+      "no2": 0.009,
+      "so2": 0.002,
+      "o3": 0.023,
+      "co": 0.3,
+      "station_matched": "청라",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "jung",
       "name": "중구",
       "area": "인천",
-      "live": false
+      "pm25": 10.0,
+      "pm10": 16.0,
+      "no2": 0.009,
+      "so2": 0.002,
+      "o3": 0.022,
+      "co": 0.2,
+      "station_matched": "중구",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "yeonsu",
       "name": "연수구",
       "area": "인천",
-      "live": false
+      "pm25": 8.0,
+      "pm10": 17.0,
+      "no2": 0.012,
+      "so2": 0.003,
+      "o3": 0.017,
+      "co": 0.3,
+      "station_matched": "송도",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "bupyeong",
       "name": "부평구",
       "area": "인천",
-      "live": false
+      "pm25": 7.0,
+      "pm10": 16.0,
+      "no2": 0.005,
+      "so2": 0.003,
+      "o3": 0.019,
+      "co": 0.4,
+      "station_matched": "부평",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "gyeyang",
@@ -42,13 +82,29 @@
       "id": "ansan",
       "name": "단원구",
       "area": "안산",
-      "live": false
+      "pm25": 0.0,
+      "pm10": 17.0,
+      "no2": 0.01,
+      "so2": 0.002,
+      "o3": 0.012,
+      "co": 0.2,
+      "station_matched": "고잔동",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "sihwa",
       "name": "시화산단",
       "area": "시흥",
-      "live": false
+      "pm25": 7.0,
+      "pm10": 1.0,
+      "no2": 0.007,
+      "so2": 0.004,
+      "o3": 0.017,
+      "co": 0.2,
+      "station_matched": "대야동",
+      "risk": "low",
+      "live": true
     }
   ]
 }
