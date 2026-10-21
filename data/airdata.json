@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21 12:34 KST",
+  "updated": "2026-10-21 17:46 KST",
   "source": "한국환경공단 에어코리아",
   "stations": [
     {
@@ -24,31 +24,71 @@
       "id": "yeonsu",
       "name": "연수구",
       "area": "인천",
-      "live": false
+      "pm25": 4.0,
+      "pm10": 14.0,
+      "no2": 0.005,
+      "so2": 0.003,
+      "o3": 0.037,
+      "co": 0.3,
+      "station_matched": "송도",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "bupyeong",
       "name": "부평구",
       "area": "인천",
-      "live": false
+      "pm25": 6.0,
+      "pm10": 16.0,
+      "no2": 0.008,
+      "so2": 0.004,
+      "o3": 0.032,
+      "co": 0.4,
+      "station_matched": "부평",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "gyeyang",
       "name": "계양구",
       "area": "인천",
-      "live": false
+      "pm25": 4.0,
+      "pm10": 14.0,
+      "no2": 0.005,
+      "so2": 0.003,
+      "o3": 0.032,
+      "co": 0.6,
+      "station_matched": "계산",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "ansan",
       "name": "단원구",
       "area": "안산",
-      "live": false
+      "pm25": 10.0,
+      "pm10": 12.0,
+      "no2": 0.019,
+      "so2": 0.002,
+      "o3": 0.011,
+      "co": 0.2,
+      "station_matched": "고잔동",
+      "risk": "low",
+      "live": true
     },
     {
       "id": "sihwa",
       "name": "시화산단",
       "area": "시흥",
-      "live": false
+      "pm25": 7.0,
+      "pm10": 18.0,
+      "no2": 0.018,
+      "so2": 0.003,
+      "o3": 0.014,
+      "co": 0.3,
+      "station_matched": "배곧동",
+      "risk": "low",
+      "live": true
     }
   ]
 }
